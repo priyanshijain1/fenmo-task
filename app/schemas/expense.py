@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from decimal import Decimal, ROUND_HALF_UP
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -12,8 +13,17 @@ class ExpenseBase(BaseModel):
     date: date
 
 
-class ExpenseCreate(ExpenseBase):
-    pass
+class ExpenseCreate(BaseModel):
+    # Accept Decimal input so we can safely convert a user-facing currency amount
+    # into integer paise before storing it.
+    amount: Decimal = Field(..., gt=0, decimal_places=2)
+    category: str = Field(..., min_length=1, max_length=100)
+    description: str = Field(..., min_length=1, max_length=500)
+    date: date
+
+    def amount_in_paise(self) -> int:
+        normalized_amount = self.amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        return int(normalized_amount * 100)
 
 
 class Expense(ExpenseBase):
