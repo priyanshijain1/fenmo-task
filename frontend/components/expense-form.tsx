@@ -12,6 +12,10 @@ type ExpenseFormState = {
   date: string;
 };
 
+type ExpenseFormProps = {
+  onSuccess?: () => void;
+};
+
 const initialFormState: ExpenseFormState = {
   amount: "",
   category: "",
@@ -19,7 +23,7 @@ const initialFormState: ExpenseFormState = {
   date: "",
 };
 
-export function ExpenseForm() {
+export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
   const [formState, setFormState] = useState<ExpenseFormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -42,6 +46,7 @@ export function ExpenseForm() {
 
       setSuccessMessage("Expense added successfully.");
       setFormState(initialFormState);
+      onSuccess?.();
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
