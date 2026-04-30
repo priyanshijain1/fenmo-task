@@ -1,15 +1,18 @@
 import hashlib
 from datetime import datetime, timezone
 
-from pymongo import ASCENDING, DESCENDING
-from pymongo.errors import DuplicateKeyError, PyMongoError
+from pymongo.errors import DuplicateKeyError
 
-from app.db.connection import get_database
-from app.exceptions import BadRequestError, DataIntegrityError, DatabaseOperationError
+from app.exceptions import BadRequestError, DataIntegrityError
 from app.schemas.expense import Expense, ExpenseCreate
-
-EXPENSES_COLLECTION = "expenses"
-REQUEST_HASH_FIELD = "request_hash"
+from app.services.expense_repository import (
+    build_expense_document,
+    ensure_expense_indexes,
+    expense_from_document,
+    get_expense_by_request_hash,
+    insert_expense,
+    list_expenses,
+)
 
 
 def build_expense_request_hash(expense_data: ExpenseCreate) -> str:
@@ -24,33 +27,6 @@ def build_expense_request_hash(expense_data: ExpenseCreate) -> str:
     return hashlib.sha256(normalized_payload.encode("utf-8")).hexdigest()
 
 
-async def ensure_expense_indexes() -> None:
-    try:
-        database = await get_database()
-        collection = database[EXPENSES_COLLECTION]
-
-        # A unique index on the request hash makes duplicate creates fail atomically,
-        # which is safer than checking first and inserting second.
-        await collection.create_index(
-            [(REQUEST_HASH_FIELD, ASCENDING)],
-            name="uq_expenses_request_hash",
-            unique=True,
-        )
-    except (PyMongoError, RuntimeError) as exc:
-        raise DatabaseOperationError("Failed to prepare expense indexes.") from exc
-
-
-def _expense_from_document(document: dict) -> Expense:
-    return Expense(
-        id=str(document["_id"]),
-        amount=document["amount"],
-        category=document["category"],
-        description=document["description"],
-        date=document["date"],
-        created_at=document["created_at"],
-    )
-
-
 async def get_expenses(
     category: str | None = None,
     sort: str | None = None,
@@ -58,60 +34,33 @@ async def get_expenses(
     if sort is not None and sort != "date_desc":
         raise BadRequestError("Unsupported sort value. Use sort=date_desc.")
 
-    try:
-        database = await get_database()
-        collection = database[EXPENSES_COLLECTION]
-
-        query: dict[str, str] = {}
-        if category:
-            # Apply the filter in MongoDB so we only fetch matching documents.
-            query["category"] = category
-
-        cursor = collection.find(query)
-        if sort == "date_desc":
-            # Let MongoDB sort by date so the newest expenses are returned first.
-            cursor = cursor.sort("date", DESCENDING)
-
-        documents = await cursor.to_list(length=None)
-        return [_expense_from_document(document) for document in documents]
-    except (PyMongoError, RuntimeError) as exc:
-        raise DatabaseOperationError("Failed to fetch expenses from the database.") from exc
+    # The service layer validates supported query behavior before delegating
+    # the actual database query to the repository layer.
+    return await list_expenses(category=category, sort=sort)
 
 
 async def create_expense(expense_data: ExpenseCreate) -> tuple[Expense, bool]:
+    request_hash = build_expense_request_hash(expense_data)
+    created_at = datetime.now(timezone.utc)
+    document = build_expense_document(
+        amount=expense_data.amount_in_paise(),
+        category=expense_data.category,
+        description=expense_data.description,
+        date=expense_data.date,
+        created_at=created_at,
+        request_hash=request_hash,
+    )
+
     try:
-        database = await get_database()
-        collection = database[EXPENSES_COLLECTION]
-
-        created_at = datetime.now(timezone.utc)
-        request_hash = build_expense_request_hash(expense_data)
-        document = {
-            "amount": expense_data.amount_in_paise(),
-            "category": expense_data.category,
-            "description": expense_data.description,
-            "date": expense_data.date,
-            "created_at": created_at,
-            REQUEST_HASH_FIELD: request_hash,
-        }
-
-        result = await collection.insert_one(document)
+        stored_document = await insert_expense(document)
     except DuplicateKeyError:
         # If the same payload is submitted again, return the existing record
         # instead of creating a second expense.
-        try:
-            existing_document = await collection.find_one({REQUEST_HASH_FIELD: request_hash})
-        except PyMongoError as exc:
-            raise DatabaseOperationError(
-                "Failed to look up the existing expense after a duplicate request."
-            ) from exc
-        if existing_document is None:
+        existing_expense = await get_expense_by_request_hash(request_hash)
+        if existing_expense is None:
             raise DataIntegrityError(
                 "Duplicate expense detected, but the original record could not be found."
             )
-        return _expense_from_document(existing_document), False
-    except (PyMongoError, RuntimeError) as exc:
-        raise DatabaseOperationError("Failed to create expense in the database.") from exc
+        return existing_expense, False
 
-    document["_id"] = result.inserted_id
-
-    return _expense_from_document(document), True
+    return expense_from_document(stored_document), True
