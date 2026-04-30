@@ -6,7 +6,6 @@ from app.routes.health import router as health_router
 
 
 from app.services.expense_service import ensure_expense_indexes
-
 from app.routes.health import router as health_router
 
 
@@ -20,7 +19,6 @@ async def lifespan(_: FastAPI):
         await close_mongo_connection()
 
 
->>>>>>> 40ea0aa (made expense creation idempotent using request hash)
 def create_app() -> FastAPI:
     app = FastAPI(title="Expense Tracker API")
     app.include_router(health_router)
