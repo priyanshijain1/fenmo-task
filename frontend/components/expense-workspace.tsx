@@ -147,7 +147,27 @@ export function ExpenseWorkspace() {
             gap: 14,
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 30 }}>Expenses</h2>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: 30 }}>Expenses</h2>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 16,
+                fontWeight: 700,
+              }}
+            >
+              Total: {formatCurrency(visibleTotal)}
+            </p>
+          </div>
           <ExpenseList
             refreshKey={refreshKey}
             onExpensesChange={(nextExpenses) => setExpenses(nextExpenses)}
@@ -159,7 +179,7 @@ export function ExpenseWorkspace() {
 }
 
 function formatCurrency(amountInPaise: number): string {
-  return `Rs. ${(amountInPaise / 100).toLocaleString("en-IN", {
+  return `\u20B9${(amountInPaise / 100).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

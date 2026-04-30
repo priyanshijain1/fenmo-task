@@ -122,7 +122,7 @@ export function ExpenseList({
 }
 
 function formatCurrency(amountInPaise: number): string {
-  return `Rs. ${(amountInPaise / 100).toLocaleString("en-IN", {
+  return `\u20B9${(amountInPaise / 100).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
