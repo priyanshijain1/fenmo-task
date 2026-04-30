@@ -35,6 +35,14 @@ build/
 dist/
 *.egg-info/
 
+# Next.js
+.next/
+out/
+
+# Node
+node_modules/
+npm-debug.log*
+
 # Editors and OS files
 .vscode/
 .idea/
