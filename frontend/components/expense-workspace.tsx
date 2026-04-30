@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { ExpenseForm } from "@/components/expense-form";
 import { ExpenseList } from "@/components/expense-list";
@@ -10,9 +10,20 @@ import type { Expense } from "@/types/expense";
 export function ExpenseWorkspace() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   const visibleTotal = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   const categories = new Set(expenses.map((expense) => expense.category)).size;
+  const categoryOptions = useMemo(() => {
+    const values = new Set(expenses.map((expense) => expense.category));
+    if (selectedCategory) {
+      values.add(selectedCategory);
+    }
+    return Array.from(values).sort((left, right) => left.localeCompare(right));
+  }, [expenses, selectedCategory]);
+  const handleExpensesChange = useCallback((nextExpenses: Expense[]) => {
+    setExpenses(nextExpenses);
+  }, []);
 
   return (
     <>
@@ -150,27 +161,63 @@ export function ExpenseWorkspace() {
           <div
             style={{
               display: "flex",
-              alignItems: "baseline",
+              alignItems: "center",
               justifyContent: "space-between",
               gap: 16,
               flexWrap: "wrap",
             }}
           >
-            <h2 style={{ margin: 0, fontSize: 30 }}>Expenses</h2>
-            <p
+            <div style={{ display: "grid", gap: 8 }}>
+              <h2 style={{ margin: 0, fontSize: 30 }}>Expenses</h2>
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: "Arial, sans-serif",
+                  fontSize: 16,
+                  fontWeight: 700,
+                }}
+              >
+                Total: {formatCurrency(visibleTotal)}
+              </p>
+            </div>
+            <label
               style={{
-                margin: 0,
+                display: "grid",
+                gap: 6,
                 fontFamily: "Arial, sans-serif",
-                fontSize: 16,
+                fontSize: 13,
                 fontWeight: 700,
+                color: "var(--muted)",
               }}
             >
-              Total: {formatCurrency(visibleTotal)}
-            </p>
+              Category
+              <select
+                value={selectedCategory}
+                onChange={(event) => setSelectedCategory(event.target.value)}
+                style={{
+                  minWidth: 180,
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  padding: "10px 12px",
+                  background: "#ffffff",
+                  color: "var(--text)",
+                  fontSize: 14,
+                  fontFamily: "Arial, sans-serif",
+                }}
+              >
+                <option value="">All categories</option>
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <ExpenseList
+            category={selectedCategory}
             refreshKey={refreshKey}
-            onExpensesChange={(nextExpenses) => setExpenses(nextExpenses)}
+            onExpensesChange={handleExpensesChange}
           />
         </article>
       </section>

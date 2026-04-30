@@ -7,11 +7,13 @@ import { getExpenses } from "@/lib/api/expenses";
 import type { Expense } from "@/types/expense";
 
 type ExpenseListProps = {
+  category?: string;
   refreshKey?: number;
   onExpensesChange?: (expenses: Expense[]) => void;
 };
 
 export function ExpenseList({
+  category,
   refreshKey = 0,
   onExpensesChange,
 }: ExpenseListProps) {
@@ -27,7 +29,10 @@ export function ExpenseList({
       setErrorMessage("");
 
       try {
-        const data = await getExpenses({ sort: "date_desc" });
+        const data = await getExpenses({
+          category: category || undefined,
+          sort: "date_desc",
+        });
         if (!isActive) {
           return;
         }
@@ -54,7 +59,7 @@ export function ExpenseList({
     return () => {
       isActive = false;
     };
-  }, [onExpensesChange, refreshKey]);
+  }, [category, onExpensesChange, refreshKey]);
 
   if (isLoading) {
     return (
