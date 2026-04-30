@@ -5,4 +5,5 @@ export type Expense = {
   description: string;
   date: string;
   created_at: string;
+  tempId?: string;
 };

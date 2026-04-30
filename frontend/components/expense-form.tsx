@@ -15,6 +15,8 @@ type ExpenseFormState = {
 
 type ExpenseFormProps = {
   onSuccess?: () => void;
+  onPreviewExpense?: (expense: import("@/types/expense").Expense) => void;
+  onSuccessWithExpense?: (expense: import("@/types/expense").Expense) => void;
 };
 
 const initialFormState: ExpenseFormState = {
@@ -24,7 +26,9 @@ const initialFormState: ExpenseFormState = {
   date: "",
 };
 
-export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
+type ExpenseType = import("@/types/expense").Expense;
+
+export function ExpenseForm({ onSuccess, onPreviewExpense, onSuccessWithExpense }: ExpenseFormProps) {
   const [formState, setFormState] = useState<ExpenseFormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Guard to prevent rapid repeated submissions even if user double-clicks quickly
@@ -45,8 +49,21 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
     setSuccessMessage("");
     setErrorMessage("");
 
-    try {
-      await createExpense({
+  try {
+      // Create a provisional expense for optimistic UI
+      const provisionalId = `temp_${Date.now()}`;
+      const provisionalExpense: ExpenseType = {
+        id: provisionalId,
+        amount: Number(formState.amount),
+        category: formState.category,
+        description: formState.description,
+        date: formState.date,
+        created_at: new Date().toISOString(),
+        tempId: provisionalId,
+      };
+      onPreviewExpense?.(provisionalExpense);
+
+      const created = await createExpense({
         amount: Number(formState.amount),
         category: formState.category,
         description: formState.description,
@@ -54,6 +71,8 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
       });
 
       setSuccessMessage("Expense added successfully.");
+      // Notify parent of the confirmed expense and provide a reconciled object
+      onSuccessWithExpense?.(Object.assign({}, created, { tempId: provisionalId as any }));
       setFormState(initialFormState);
       onSuccess?.();
     } catch (error) {

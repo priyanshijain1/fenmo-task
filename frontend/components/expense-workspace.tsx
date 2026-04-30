@@ -49,6 +49,17 @@ export function ExpenseWorkspace() {
     fontSize: 13,
   });
 
+  // Optimistic update: preview expense before backend call is confirmed
+  const handlePreviewExpense = (expense: Expense) => {
+    setExpenses((prev) => [expense, ...prev]);
+  };
+
+  const handleCreatedExpense = (expense: Expense) => {
+    setExpenses((prev) =>
+      prev.map((e) => (e.tempId && e.tempId === (expense as any).tempId ? expense : e))
+    );
+  };
+
   return (
     <>
       <section
@@ -168,7 +179,11 @@ export function ExpenseWorkspace() {
               and date in one clean entry form.
             </p>
           </div>
-          <ExpenseForm onSuccess={() => setRefreshKey((current) => current + 1)} />
+          <ExpenseForm
+            onSuccess={() => setRefreshKey((current) => current + 1)}
+            onPreviewExpense={handlePreviewExpense}
+            onSuccessWithExpense={handleCreatedExpense}
+          />
         </article>
 
         <article
