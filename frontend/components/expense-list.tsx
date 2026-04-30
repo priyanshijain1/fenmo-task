@@ -22,6 +22,7 @@ export function ExpenseList({
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [hasCachedData, setHasCachedData] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -29,6 +30,20 @@ export function ExpenseList({
     async function loadExpenses() {
       setIsLoading(true);
       setErrorMessage("");
+      // Detect if cached data exists before fetching
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("expenses-cache");
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached) as Expense[];
+            setHasCachedData(parsed.length > 0);
+          } catch {
+            // ignore parse errors
+          }
+        } else {
+          setHasCachedData(false);
+        }
+      }
 
       try {
         const data = await getExpenses({
@@ -78,23 +93,80 @@ export function ExpenseList({
 
   if (errorMessage) {
     return (
-      <p
-        style={{
-          ...statusStyles,
-          color: "#b42318",
-          background: "rgba(180, 35, 24, 0.12)",
-        }}
-      >
-        {errorMessage}
-      </p>
+      <div style={{ display: "grid", gap: 8 }}>
+        <p
+          style={{
+            ...statusStyles,
+            color: "#b42318",
+            background: "rgba(180, 35, 24, 0.12)",
+          }}
+        >
+          {errorMessage}
+        </p>
+        {hasCachedData ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ fontFamily: "Arial, sans-serif", fontSize: 12, color: "var(--muted)" }}>
+              Loaded cached data from previous load
+            </span>
+            <button
+              onClick={() => {
+                const cache = (typeof window !== "undefined") ? localStorage.getItem("expenses-cache") : null;
+                if (cache) {
+                  try {
+                    const data = JSON.parse(cache) as Expense[];
+                    setExpenses(data);
+                    onExpensesChange?.(data);
+                    setErrorMessage("");
+                  } catch {
+                    // ignore parse errors
+                  }
+                }
+              }}
+              style={{
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                padding: "6px 10px",
+                background: "var(--surface)",
+                color: "var(--text)",
+                cursor: "pointer",
+                fontFamily: "Arial, sans-serif",
+                fontSize: 13,
+              }}
+            >
+              Load cached data
+            </button>
+          </div>
+        ) : null}
+      </div>
     );
   }
 
   if (expenses.length === 0) {
     return (
-      <p style={statusStyles}>
-        No expenses yet. Add your first one from the form.
-      </p>
+      <div style={{ display: "grid", gap: 8 }}>
+        <p style={statusStyles}>No expenses yet. Add your first one from the form.</p>
+        <button
+          onClick={() => {
+            const el = typeof window !== "undefined" ? document.getElementById("expense-form") : null;
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "start" });
+              (el as HTMLElement).focus?.();
+            }
+          }}
+          style={{
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            padding: "8px 12px",
+            background: "var(--surface)",
+            color: "var(--text)",
+            cursor: "pointer",
+            fontFamily: "Arial, sans-serif",
+            fontSize: 13,
+          }}
+        >
+          Add Expense
+        </button>
+      </div>
     );
   }
 

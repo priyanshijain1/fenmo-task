@@ -71,6 +71,7 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
 
   return (
     <form
+      id="expense-form"
       onSubmit={handleSubmit}
       style={{
         display: "grid",
