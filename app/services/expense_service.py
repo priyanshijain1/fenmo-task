@@ -1,7 +1,7 @@
 import hashlib
 from datetime import datetime, timezone
 
-from pymongo import ASCENDING
+from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import DuplicateKeyError
 
 from app.db.connection import get_database
@@ -47,7 +47,10 @@ def _expense_from_document(document: dict) -> Expense:
     )
 
 
-async def get_expenses(category: str | None = None) -> list[Expense]:
+async def get_expenses(
+    category: str | None = None,
+    sort: str | None = None,
+) -> list[Expense]:
     database = await get_database()
     collection = database[EXPENSES_COLLECTION]
 
@@ -56,7 +59,12 @@ async def get_expenses(category: str | None = None) -> list[Expense]:
         # Apply the filter in MongoDB so we only fetch matching documents.
         query["category"] = category
 
-    documents = await collection.find(query).to_list(length=None)
+    cursor = collection.find(query)
+    if sort == "date_desc":
+        # Let MongoDB sort by date so the newest expenses are returned first.
+        cursor = cursor.sort("date", DESCENDING)
+
+    documents = await cursor.to_list(length=None)
     return [_expense_from_document(document) for document in documents]
 
 

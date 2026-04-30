@@ -9,8 +9,9 @@ router = APIRouter(prefix="/expenses", tags=["expenses"])
 @router.get("", response_model=list[Expense])
 async def get_expenses_route(
     category: str | None = Query(default=None),
+    sort: str | None = Query(default=None),
 ) -> list[Expense]:
-    return await get_expenses(category=category)
+    return await get_expenses(category=category, sort=sort)
 
 
 @router.post("", response_model=Expense, status_code=status.HTTP_201_CREATED)
