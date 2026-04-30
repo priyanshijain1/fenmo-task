@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
+import { useRef } from "react";
 
 import { ApiError } from "@/lib/api/client";
 import { createExpense } from "@/lib/api/expenses";
@@ -26,11 +27,19 @@ const initialFormState: ExpenseFormState = {
 export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
   const [formState, setFormState] = useState<ExpenseFormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Guard to prevent rapid repeated submissions even if user double-clicks quickly
+  const submittingRef = useRef(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    // If already submitting (guard against rapid clicks / double submissions)
+    if (submittingRef.current) {
+      return;
+    }
+    submittingRef.current = true;
 
     setIsSubmitting(true);
     setSuccessMessage("");
@@ -54,6 +63,8 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
         setErrorMessage("Something went wrong while saving the expense.");
       }
     } finally {
+      // Reset submitting guard and UI state
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   }
