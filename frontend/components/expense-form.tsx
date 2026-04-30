@@ -209,7 +209,13 @@ export function ExpenseForm({ onSuccess }: ExpenseFormProps) {
           cursor: isSubmitting ? "not-allowed" : "pointer",
         }}
       >
-        {isSubmitting ? "Saving..." : "Add Expense"}
+        {isSubmitting ? (
+          <>
+            <span className="spinner" aria-label="loading" /> Saving...
+          </>
+        ) : (
+          "Add Expense"
+        )}
       </button>
     </form>
   );

@@ -85,9 +85,19 @@ export function ExpenseList({
 
   if (isLoading) {
     return (
-      <p style={statusStyles}>
-        Loading expenses...
-      </p>
+      <div style={{ display: "grid", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="spinner" aria-label="loading" />
+          <p style={statusStyles}>Loading expenses...</p>
+        </div>
+        {/* simple skeleton items */}
+        {Array.from({ length: 2 }).map((_, idx) => (
+          <div key={idx} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, padding: 16, borderRadius: 18, background: "rgba(255,255,255,0.75)", border: "1px solid var(--border)" }}>
+            <div style={{ width: "60%", height: 12, background: "rgba(0,0,0,.04)", borderRadius: 6 }} />
+            <div style={{ width: 80, height: 12, background: "rgba(0,0,0,.04)", borderRadius: 6 }} />
+          </div>
+        ))}
+      </div>
     );
   }
 
