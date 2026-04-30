@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ExpenseBase(BaseModel):
@@ -24,6 +24,14 @@ class ExpenseCreate(BaseModel):
     def amount_in_paise(self) -> int:
         normalized_amount = self.amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         return int(normalized_amount * 100)
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, value: str) -> str:
+        normalized_value = value.strip()
+        if not normalized_value:
+            raise ValueError("Category is required")
+        return normalized_value
 
 
 class Expense(ExpenseBase):
