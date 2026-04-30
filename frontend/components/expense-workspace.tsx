@@ -6,6 +6,7 @@ import { ExpenseForm } from "@/components/expense-form";
 import { ExpenseList } from "@/components/expense-list";
 import { SummaryCard } from "@/components/summary-card";
 import { CategoryTotals } from "@/components/category-totals";
+import { formatCurrency } from "@/lib/utils/format";
 import type { Expense } from "@/types/expense";
 
 export function ExpenseWorkspace() {
@@ -144,11 +145,11 @@ export function ExpenseWorkspace() {
             value={String(categories)}
             helper="Unique categories in the list"
           />
-          <SummaryCard
-            label="Backend status"
-            value="Connected"
-            helper="Live requests through the FastAPI API"
-          />
+            <SummaryCard
+              label="Backend status"
+              value="Connected"
+              helper="Live requests through the FastAPI API"
+            />
           <CategoryTotals expenses={expenses} />
         </div>
       </section>
@@ -289,9 +290,4 @@ export function ExpenseWorkspace() {
   );
 }
 
-function formatCurrency(amountInPaise: number): string {
-  return `\u20B9${(amountInPaise / 100).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
+// moved to shared utils: formatCurrency

@@ -1,18 +1,12 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { formatCurrency } from "@/lib/utils/format";
 import type { Expense } from "@/types/expense";
 
 type CategoryTotalsProps = {
   expenses: Expense[];
 };
-
-function formatCurrency(amountInPaise: number): string {
-  return `\u20B9${(amountInPaise / 100).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
 
 export function CategoryTotals({ expenses }: CategoryTotalsProps) {
   const totals = useMemo(() => {
