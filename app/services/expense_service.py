@@ -47,6 +47,14 @@ def _expense_from_document(document: dict) -> Expense:
     )
 
 
+async def get_expenses() -> list[Expense]:
+    database = await get_database()
+    collection = database[EXPENSES_COLLECTION]
+
+    documents = await collection.find().to_list(length=None)
+    return [_expense_from_document(document) for document in documents]
+
+
 async def create_expense(expense_data: ExpenseCreate) -> tuple[Expense, bool]:
     database = await get_database()
     collection = database[EXPENSES_COLLECTION]
