@@ -11,6 +11,7 @@ export function ExpenseWorkspace() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [sortOrder, setSortOrder] = useState<"date_desc" | "date_asc">("date_desc");
 
   const visibleTotal = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   const categories = new Set(expenses.map((expense) => expense.category)).size;
@@ -24,6 +25,17 @@ export function ExpenseWorkspace() {
   const handleExpensesChange = useCallback((nextExpenses: Expense[]) => {
     setExpenses(nextExpenses);
   }, []);
+
+  const sortButtonStyle = (active: boolean): React.CSSProperties => ({
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    padding: "6px 10px",
+    background: active ? "var(--accent)" : "transparent",
+    color: active ? "white" : "var(--text)",
+    cursor: "pointer",
+    fontFamily: "Arial, sans-serif",
+    fontSize: 13,
+  });
 
   return (
     <>
@@ -167,19 +179,36 @@ export function ExpenseWorkspace() {
               flexWrap: "wrap",
             }}
           >
-            <div style={{ display: "grid", gap: 8 }}>
-              <h2 style={{ margin: 0, fontSize: 30 }}>Expenses</h2>
-              <p
-                style={{
-                  margin: 0,
-                  fontFamily: "Arial, sans-serif",
-                  fontSize: 16,
-                  fontWeight: 700,
-                }}
-              >
-                Total: {formatCurrency(visibleTotal)}
-              </p>
-            </div>
+          <div style={{ display: "grid", gap: 8 }}>
+            <h2 style={{ margin: 0, fontSize: 30 }}>Expenses</h2>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "Arial, sans-serif",
+                fontSize: 16,
+                fontWeight: 700,
+              }}
+            >
+              Total: {formatCurrency(visibleTotal)}
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }} aria-label="Sort order">
+            <span style={{ fontFamily: "Arial, sans-serif", fontSize: 12, color: "var(--muted)" }}>Sort</span>
+            <button
+              onClick={() => setSortOrder("date_desc")}
+              style={sortButtonStyle(sortOrder === "date_desc")}
+              aria-pressed={sortOrder === "date_desc"}
+            >
+              Newest
+            </button>
+            <button
+              onClick={() => setSortOrder("date_asc")}
+              style={sortButtonStyle(sortOrder === "date_asc")}
+              aria-pressed={sortOrder === "date_asc"}
+            >
+              Oldest
+            </button>
+          </div>
             <label
               style={{
                 display: "grid",
@@ -218,6 +247,7 @@ export function ExpenseWorkspace() {
             category={selectedCategory}
             refreshKey={refreshKey}
             onExpensesChange={handleExpensesChange}
+            sort={sortOrder}
           />
         </article>
       </section>

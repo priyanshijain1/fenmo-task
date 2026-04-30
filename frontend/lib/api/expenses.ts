@@ -3,7 +3,7 @@ import type { Expense } from "@/types/expense";
 
 export type GetExpensesParams = {
   category?: string;
-  sort?: "date_desc";
+  sort?: "date_desc" | "date_asc";
 };
 
 export type CreateExpenseInput = {

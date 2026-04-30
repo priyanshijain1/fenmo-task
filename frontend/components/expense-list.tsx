@@ -10,12 +10,14 @@ type ExpenseListProps = {
   category?: string;
   refreshKey?: number;
   onExpensesChange?: (expenses: Expense[]) => void;
+  sort?: "date_desc" | "date_asc";
 };
 
 export function ExpenseList({
   category,
   refreshKey = 0,
   onExpensesChange,
+  sort,
 }: ExpenseListProps) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +33,7 @@ export function ExpenseList({
       try {
         const data = await getExpenses({
           category: category || undefined,
-          sort: "date_desc",
+          sort: sort ?? "date_desc",
         });
         if (!isActive) {
           return;
@@ -59,7 +61,7 @@ export function ExpenseList({
     return () => {
       isActive = false;
     };
-  }, [category, onExpensesChange, refreshKey]);
+  }, [category, onExpensesChange, refreshKey, sort]);
 
   if (isLoading) {
     return (
