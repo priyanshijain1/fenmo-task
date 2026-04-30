@@ -4,13 +4,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MONGODB_URI_ENV = "MONGODB_URI"
+DATABASE_URL_ENV = "DATABASE_URL"
 DEBUG_ENV = "DEBUG"
-DEFAULT_DATABASE_NAME = "expense_tracker"
 
 
-def get_mongodb_uri() -> str | None:
-    return os.getenv(MONGODB_URI_ENV)
+def get_database_url() -> str | None:
+    return os.getenv(DATABASE_URL_ENV)
 
 
 def is_debug_enabled() -> bool:

@@ -1,14 +1,12 @@
 import hashlib
 from datetime import datetime, timezone
 
-from pymongo.errors import DuplicateKeyError
-
 from app.exceptions import BadRequestError, DataIntegrityError
 from app.schemas.expense import Expense, ExpenseCreate
 from app.services.expense_repository import (
-    build_expense_document,
-    ensure_expense_indexes,
-    expense_from_document,
+    DuplicateExpenseError,
+    build_expense_record,
+    expense_from_record,
     get_expense_by_request_hash,
     insert_expense,
     list_expenses,
@@ -42,7 +40,7 @@ async def get_expenses(
 async def create_expense(expense_data: ExpenseCreate) -> tuple[Expense, bool]:
     request_hash = build_expense_request_hash(expense_data)
     created_at = datetime.now(timezone.utc)
-    document = build_expense_document(
+    record = build_expense_record(
         amount=expense_data.amount_in_paise(),
         category=expense_data.category,
         description=expense_data.description,
@@ -52,8 +50,8 @@ async def create_expense(expense_data: ExpenseCreate) -> tuple[Expense, bool]:
     )
 
     try:
-        stored_document = await insert_expense(document)
-    except DuplicateKeyError:
+        stored_record = await insert_expense(record)
+    except DuplicateExpenseError:
         # If the same payload is submitted again, return the existing record
         # instead of creating a second expense.
         existing_expense = await get_expense_by_request_hash(request_hash)
@@ -63,4 +61,4 @@ async def create_expense(expense_data: ExpenseCreate) -> tuple[Expense, bool]:
             )
         return existing_expense, False
 
-    return expense_from_document(stored_document), True
+    return expense_from_record(stored_record), True

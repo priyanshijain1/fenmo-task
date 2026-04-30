@@ -1,38 +1,26 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from pymongo import ASCENDING, DESCENDING
-from pymongo.errors import DuplicateKeyError, PyMongoError
+from sqlalchemy import Select, desc, select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app.db.connection import get_database
+from app.db.connection import get_session
+from app.db.models import ExpenseRecord
 from app.exceptions import DatabaseOperationError
 from app.schemas.expense import Expense
 
-EXPENSES_COLLECTION = "expenses"
-REQUEST_HASH_FIELD = "request_hash"
+
+class DuplicateExpenseError(Exception):
+    """Raised when an expense insert violates the idempotency hash uniqueness."""
 
 
-async def ensure_expense_indexes() -> None:
-    try:
-        database = await get_database()
-        collection = database[EXPENSES_COLLECTION]
-
-        await collection.create_index(
-            [(REQUEST_HASH_FIELD, ASCENDING)],
-            name="uq_expenses_request_hash",
-            unique=True,
-        )
-    except (PyMongoError, RuntimeError) as exc:
-        raise DatabaseOperationError("Failed to prepare expense indexes.") from exc
-
-
-def expense_from_document(document: dict) -> Expense:
+def expense_from_record(record: ExpenseRecord) -> Expense:
     return Expense(
-        id=str(document["_id"]),
-        amount=document["amount"],
-        category=document["category"],
-        description=document["description"],
-        date=document["date"],
-        created_at=document["created_at"],
+        id=str(record.id),
+        amount=record.amount,
+        category=record.category,
+        description=record.description,
+        date=record.date,
+        created_at=record.created_at,
     )
 
 
@@ -41,64 +29,63 @@ async def list_expenses(
     sort: str | None = None,
 ) -> list[Expense]:
     try:
-        database = await get_database()
-        collection = database[EXPENSES_COLLECTION]
-
-        query: dict[str, str] = {}
+        statement: Select[tuple[ExpenseRecord]] = select(ExpenseRecord)
         if category:
-            query["category"] = category
+            statement = statement.where(ExpenseRecord.category == category)
 
-        cursor = collection.find(query)
         if sort == "date_desc":
-            cursor = cursor.sort("date", DESCENDING)
+            statement = statement.order_by(desc(ExpenseRecord.date))
 
-        documents = await cursor.to_list(length=None)
-        return [expense_from_document(document) for document in documents]
-    except (PyMongoError, RuntimeError) as exc:
+        async with get_session() as session:
+            result = await session.execute(statement)
+            records = result.scalars().all()
+        return [expense_from_record(record) for record in records]
+    except (SQLAlchemyError, RuntimeError) as exc:
         raise DatabaseOperationError("Failed to fetch expenses from the database.") from exc
 
 
-async def insert_expense(document: dict) -> dict:
+async def insert_expense(record: ExpenseRecord) -> ExpenseRecord:
     try:
-        database = await get_database()
-        collection = database[EXPENSES_COLLECTION]
-        result = await collection.insert_one(document)
-        document["_id"] = result.inserted_id
-        return document
-    except DuplicateKeyError:
-        raise
-    except (PyMongoError, RuntimeError) as exc:
+        async with get_session() as session:
+            session.add(record)
+            await session.commit()
+            await session.refresh(record)
+        return record
+    except IntegrityError as exc:
+        raise DuplicateExpenseError from exc
+    except (SQLAlchemyError, RuntimeError) as exc:
         raise DatabaseOperationError("Failed to create expense in the database.") from exc
 
 
 async def get_expense_by_request_hash(request_hash: str) -> Expense | None:
     try:
-        database = await get_database()
-        collection = database[EXPENSES_COLLECTION]
-        document = await collection.find_one({REQUEST_HASH_FIELD: request_hash})
-        if document is None:
+        statement = select(ExpenseRecord).where(ExpenseRecord.request_hash == request_hash)
+        async with get_session() as session:
+            result = await session.execute(statement)
+            record = result.scalar_one_or_none()
+        if record is None:
             return None
-        return expense_from_document(document)
-    except (PyMongoError, RuntimeError) as exc:
+        return expense_from_record(record)
+    except (SQLAlchemyError, RuntimeError) as exc:
         raise DatabaseOperationError(
             "Failed to look up the existing expense after a duplicate request."
         ) from exc
 
 
-def build_expense_document(
+def build_expense_record(
     *,
     amount: int,
     category: str,
     description: str,
-    date,
+    date: date,
     created_at: datetime,
     request_hash: str,
-) -> dict:
-    return {
-        "amount": amount,
-        "category": category,
-        "description": description,
-        "date": date,
-        "created_at": created_at,
-        REQUEST_HASH_FIELD: request_hash,
-    }
+) -> ExpenseRecord:
+    return ExpenseRecord(
+        amount=amount,
+        category=category,
+        description=description,
+        date=date,
+        created_at=created_at,
+        request_hash=request_hash,
+    )
