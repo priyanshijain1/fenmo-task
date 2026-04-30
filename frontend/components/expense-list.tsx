@@ -39,6 +39,11 @@ export function ExpenseList({
           return;
         }
         setExpenses(data);
+        try {
+          localStorage.setItem("expenses-cache", JSON.stringify(data));
+        } catch {
+          // ignore
+        }
         onExpensesChange?.(data);
       } catch (error) {
         if (!isActive) {

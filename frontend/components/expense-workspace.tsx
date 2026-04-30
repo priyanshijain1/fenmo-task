@@ -9,7 +9,14 @@ import type { Expense } from "@/types/expense";
 
 export function ExpenseWorkspace() {
   const [refreshKey, setRefreshKey] = useState(0);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    try {
+      const cached = typeof window !== "undefined" ? localStorage.getItem("expenses-cache") : null;
+      return cached ? (JSON.parse(cached) as Expense[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [selectedCategory, setSelectedCategory] = useState("");
   const [sortOrder, setSortOrder] = useState<"date_desc" | "date_asc">("date_desc");
 
@@ -24,6 +31,11 @@ export function ExpenseWorkspace() {
   }, [expenses, selectedCategory]);
   const handleExpensesChange = useCallback((nextExpenses: Expense[]) => {
     setExpenses(nextExpenses);
+    try {
+      localStorage.setItem("expenses-cache", JSON.stringify(nextExpenses));
+    } catch {
+      // ignore caching failures
+    }
   }, []);
 
   const sortButtonStyle = (active: boolean): React.CSSProperties => ({
