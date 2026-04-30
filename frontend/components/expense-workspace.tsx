@@ -60,6 +60,10 @@ export function ExpenseWorkspace() {
     );
   };
 
+  const handleRollbackProvisional = (tempId: string) => {
+    setExpenses((prev) => prev.filter((e) => e.tempId !== tempId));
+  };
+
   return (
     <>
       <section
@@ -183,6 +187,7 @@ export function ExpenseWorkspace() {
             onSuccess={() => setRefreshKey((current) => current + 1)}
             onPreviewExpense={handlePreviewExpense}
             onSuccessWithExpense={handleCreatedExpense}
+            onError={handleRollbackProvisional}
           />
         </article>
 

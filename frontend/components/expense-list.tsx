@@ -23,6 +23,7 @@ export function ExpenseList({
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [hasCachedData, setHasCachedData] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let isActive = true;
@@ -45,43 +46,52 @@ export function ExpenseList({
         }
       }
 
-      try {
-        const data = await getExpenses({
-          category: category || undefined,
-          sort: sort ?? "date_desc",
-        });
-        if (!isActive) {
-          return;
-        }
-        setExpenses(data);
+      // Retry loop for transient API failures
+      const MAX_RETRIES = 2;
+      let attempt = 0;
+      while (true) {
         try {
-          localStorage.setItem("expenses-cache", JSON.stringify(data));
-        } catch {
-          // ignore
-        }
-        onExpensesChange?.(data);
-      } catch (error) {
-        if (!isActive) {
-          return;
-        }
-        if (error instanceof ApiError) {
-          setErrorMessage(error.message);
-        } else {
-          setErrorMessage("Unable to load expenses right now.");
-        }
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
+          const data = await getExpenses({
+            category: category || undefined,
+            sort: sort ?? "date_desc",
+          });
+          if (!isActive) {
+            return;
+          }
+          setExpenses(data);
+          try {
+            localStorage.setItem("expenses-cache", JSON.stringify(data));
+            setHasCachedData(true);
+          } catch {
+            // ignore cache write failures
+          }
+          onExpensesChange?.(data);
+          break;
+        } catch (error) {
+          if (!isActive) {
+            return;
+          }
+          const shouldRetry = error instanceof ApiError && (error.status >= 500 || error.status === 429);
+          attempt++;
+          if (!shouldRetry || attempt > MAX_RETRIES) {
+            if (error instanceof ApiError) {
+              setErrorMessage(error.message);
+            } else {
+              setErrorMessage("Unable to load expenses right now.");
+            }
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 500 * attempt));
         }
       }
-    }
+      }
 
     void loadExpenses();
 
     return () => {
       isActive = false;
     };
-  }, [category, onExpensesChange, refreshKey, sort]);
+  }, [category, onExpensesChange, refreshKey, sort, retryKey]);
 
   if (isLoading) {
     return (
@@ -146,7 +156,22 @@ export function ExpenseList({
               Load cached data
             </button>
           </div>
-        ) : null}
+          ) : null}
+        <button
+          onClick={() => setRetryKey((k) => k + 1)}
+          style={{
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            padding: "6px 10px",
+            background: "var(--surface)",
+            color: "var(--text)",
+            cursor: "pointer",
+            fontFamily: "Arial, sans-serif",
+            fontSize: 13,
+          }}
+        >
+          Retry
+        </button>
       </div>
     );
   }

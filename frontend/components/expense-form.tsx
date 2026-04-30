@@ -17,6 +17,7 @@ type ExpenseFormProps = {
   onSuccess?: () => void;
   onPreviewExpense?: (expense: import("@/types/expense").Expense) => void;
   onSuccessWithExpense?: (expense: import("@/types/expense").Expense) => void;
+  onError?: (tempId: string) => void;
 };
 
 const initialFormState: ExpenseFormState = {
@@ -28,7 +29,7 @@ const initialFormState: ExpenseFormState = {
 
 type ExpenseType = import("@/types/expense").Expense;
 
-export function ExpenseForm({ onSuccess, onPreviewExpense, onSuccessWithExpense }: ExpenseFormProps) {
+export function ExpenseForm({ onSuccess, onPreviewExpense, onSuccessWithExpense, onError }: ExpenseFormProps) {
   const [formState, setFormState] = useState<ExpenseFormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Guard to prevent rapid repeated submissions even if user double-clicks quickly
@@ -49,9 +50,10 @@ export function ExpenseForm({ onSuccess, onPreviewExpense, onSuccessWithExpense 
     setSuccessMessage("");
     setErrorMessage("");
 
+  let provisionalId: string | null = null;
   try {
       // Create a provisional expense for optimistic UI
-      const provisionalId = `temp_${Date.now()}`;
+      provisionalId = `temp_${Date.now()}`;
       const provisionalExpense: ExpenseType = {
         id: provisionalId,
         amount: Number(formState.amount),
@@ -76,6 +78,9 @@ export function ExpenseForm({ onSuccess, onPreviewExpense, onSuccessWithExpense 
       setFormState(initialFormState);
       onSuccess?.();
     } catch (error) {
+      if (provisionalId) {
+        onError?.(provisionalId);
+      }
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
       } else {
