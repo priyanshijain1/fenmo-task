@@ -1,3 +1,4 @@
+import { ExpenseForm } from "@/components/expense-form";
 import { SummaryCard } from "@/components/summary-card";
 
 const previewExpenses = [
@@ -5,21 +6,21 @@ const previewExpenses = [
     id: "1",
     category: "Food",
     description: "Lunch with team",
-    amount: "₹540",
+    amount: "Rs. 540",
     date: "30 Apr 2026",
   },
   {
     id: "2",
     category: "Travel",
     description: "Metro recharge",
-    amount: "₹250",
+    amount: "Rs. 250",
     date: "29 Apr 2026",
   },
   {
     id: "3",
     category: "Bills",
     description: "Electricity",
-    amount: "₹1,820",
+    amount: "Rs. 1,820",
     date: "28 Apr 2026",
   },
 ];
@@ -103,16 +104,24 @@ export default function HomePage() {
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             }}
           >
-            <SummaryCard label="Visible total" value="₹2,610" helper="Current list snapshot" />
+            <SummaryCard
+              label="Visible total"
+              value="Rs. 2,610"
+              helper="Current list snapshot"
+            />
             <SummaryCard label="Categories" value="3" helper="Food, Travel, Bills" />
-            <SummaryCard label="Backend status" value="Ready" helper="Connect this UI to FastAPI next" />
+            <SummaryCard
+              label="Backend status"
+              value="Ready"
+              helper="Connect this UI to FastAPI next"
+            />
           </div>
         </section>
 
         <section
           style={{
             display: "grid",
-            gridTemplateColumns: "1.05fr 0.95fr",
+            gridTemplateColumns: "minmax(0, 420px) minmax(0, 1fr)",
             gap: 24,
           }}
         >
@@ -127,40 +136,21 @@ export default function HomePage() {
               gap: 18,
             }}
           >
-            <div>
-              <h2 style={{ margin: 0, fontSize: 30 }}>Suggested Structure</h2>
+            <div style={{ display: "grid", gap: 8 }}>
+              <h2 style={{ margin: 0, fontSize: 30 }}>Add Expense</h2>
               <p
                 style={{
-                  margin: "10px 0 0",
+                  margin: 0,
                   color: "var(--muted)",
                   fontFamily: "Arial, sans-serif",
                   lineHeight: 1.6,
                 }}
               >
-                Keep API helpers, feature components, and page-level composition
-                separate from day one. That keeps the frontend extendable without
-                turning into a single large page file.
+                Keep the UI simple for now: capture amount, category, description,
+                and date in one clean entry form.
               </p>
             </div>
-
-            <pre
-              style={{
-                margin: 0,
-                padding: 20,
-                borderRadius: 18,
-                background: "#1f2937",
-                color: "#f9fafb",
-                overflowX: "auto",
-                fontSize: 14,
-                lineHeight: 1.7,
-              }}
-            >
-{`frontend/
-  app/
-  components/
-  lib/
-  types/`}
-            </pre>
+            <ExpenseForm />
           </article>
 
           <article
