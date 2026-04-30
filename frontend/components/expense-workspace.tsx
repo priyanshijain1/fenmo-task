@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import { ExpenseForm } from "@/components/expense-form";
 import { ExpenseList } from "@/components/expense-list";
 import { SummaryCard } from "@/components/summary-card";
+import { CategoryTotals } from "@/components/category-totals";
 import type { Expense } from "@/types/expense";
 
 export function ExpenseWorkspace() {
@@ -148,6 +149,7 @@ export function ExpenseWorkspace() {
             value="Connected"
             helper="Live requests through the FastAPI API"
           />
+          <CategoryTotals expenses={expenses} />
         </div>
       </section>
 
